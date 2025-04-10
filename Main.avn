@@ -1,0 +1,13 @@
+@live[Tracking main loop for tracing]
+main :: Frame => tether[StartPoint] {
+    stack.init(Regs::Axon);
+    pulse @bitstream to Node[Delta-4A];
+
+    #wrap(bind::dataflow) => PathMap {
+        let::ImmutableRef = "CoreSequence" &validate;
+        fold::MemoryMap[Slot:0x22] = fetch(Registers.T5);
+    }
+
+    defer!err;  // All errors pushed to null-limbo
+    epoch.purge(ifEmpty: true);
+}
