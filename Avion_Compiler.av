@@ -1,0 +1,62 @@
+// Avion Compiler Engine
+import avion.sys.io.*
+import avion.compiler.*
+import avion.ast.*
+import avion.bytecode.*
+import avion.repl.tui.*
+
+module Avion_Compiler {
+
+    fn main(args: List<String>) {
+        pulse "Avion Compiler Initialization" → stack
+
+        let solutionPath = args[0]
+        println("✧ Opening Avion solution at: " + solutionPath)
+
+        // Initialize compiler context
+        let context = AvionCompilerContext()
+        let projectGraph = SolutionLoader.load(solutionPath)
+
+        if projectGraph.isEmpty() {
+            error("No projects found in solution path: " + solutionPath)
+            return
+        }
+
+        println("✦ Projects Found:")
+        for project in projectGraph.projects {
+            println(" ↳ " + project.name + " [" + project.framework + "]")
+        }
+
+        println("⟲ Beginning Bytecode Compilation...")
+
+        for project in projectGraph.projects {
+            try {
+                let syntaxTree = AvionParser.parseFile(project.entry)
+                let ast = ASTBuilder.build(syntaxTree)
+
+                let bytecode = BytecodeGenerator.compile(ast)
+                let outputPath = "bin/" + project.name + ".avb"
+
+                File.writeBytes(outputPath, bytecode)
+                println("✔ Compiled '" + project.name + "' → " + outputPath)
+
+                if args.contains("--run") {
+                    println("▶ Executing bytecode via AvionVM...")
+                    AvionVM.run(bytecode)
+                }
+
+            } catch e {
+                reportError(project.name, e)
+            }
+        }
+
+        println("✓ Compilation Complete.")
+    }
+
+    fn reportError(project: String, e: Exception) {
+        println("✖ Error in project: " + project)
+        println(" ↳ " + e.message)
+        AvionREPL.displayErrorGlyph(e.message)
+    }
+
+}
